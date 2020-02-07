@@ -118,3 +118,6 @@ if __name__ == '__main__':
         # add 1 to the number of coins mined and print it.  Otherwise,
         # print the message from the server.
         
+
+
+        break
