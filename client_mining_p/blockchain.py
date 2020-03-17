@@ -99,7 +99,7 @@ class Blockchain(object):
         proof = random.randint(0, 10000)
         while self.valid_proof(block_string, proof) is False:
             proof += 1
-            print(proof)
+            print(f'proof: {proof}')
 
         return proof
 
@@ -117,7 +117,7 @@ class Blockchain(object):
         """
         guess = f'{block_string}{proof}'.encode()
         guess_hash = hashlib.sha256(guess).hexdigest()
-        print(guess)
+        print(f'guess_hash: {guess_hash}')
 
         return guess_hash[:4] == '0000'
 
@@ -157,8 +157,14 @@ def full_chain():
     }
     return jsonify(response), 200
 
+@app.route('/last_block', methods=['GET'])
+def return_last_block():
+    response = {
+        'last_block': blockchain.last_block
+    }
+
+    return jsonify(response), 200
 
 # Run the program on port 5000
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
-
