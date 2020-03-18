@@ -15,10 +15,13 @@ def proof_of_work(block):
     :return: A valid proof for the provided block
     """
     block_string = json.dumps(block ,sort_keys=True)
+    print(f'************** \nPRE MINER PROOF OF WORK: block_string {block_string}\n **************')
     proof = random.randint(0, 10000)
+    print(f'************** \nPRE MINER PROOF OF WORK: random proof {block_string}\n **************')
     while valid_proof(block_string, proof) is False:
         proof += 1
-        print(f'proof: {proof}')
+        print(f'INVALID HASH: Searching for proof.....\n      next attempted proof: {proof}')
+        # print(f'proof: {proof}')
 
     return proof
 
@@ -54,7 +57,7 @@ if __name__ == '__main__':
     f.close()
 
     coins_mined = 0 
-    print(f'******** \nWe started mining\n ********')
+    print(f'**************\nWe started mining\n**************')
     start_time = time.time()
 
     # Run forever until interrupted
@@ -65,8 +68,6 @@ if __name__ == '__main__':
             data = r.json()
         except ValueError:
             print("Error:  Non-json response")
-            print("Response returned:")
-            print(r)
             break
         print(f'Request Data: {data}')
 
@@ -77,8 +78,7 @@ if __name__ == '__main__':
         # Get New Proof
         
         new_proof = proof_of_work(block)
-        print(f'******** \n new proof found \n ********')
-        print(new_proof)
+        print(f'********\nNew Proof: {new_proof}\n********')
 
         # When found, POST it to the server {"proof": new_proof, "id": id}
         post_data = {"proof": new_proof, "id": id}
@@ -96,7 +96,9 @@ if __name__ == '__main__':
         # add 1 to the number of coins mined and print it.  Otherwise,
         # print the message from the server.
         
-        print(data)
+        print(f'********\nRESPONSE FROM /mine: {data}\n********')
+        breakpoint()
+
         if data['new_block']:
             end_time = time.time()
             print(f'It took {end_time - start_time} to mine the coin')
@@ -106,3 +108,6 @@ if __name__ == '__main__':
             end_time = time.time()
             print(f'It took {end_time - start_time} to FAIL')
             print(data['message'])
+        
+        print(f'********\n--- END OF LOOP ---\n********')
+        breakpoint()

@@ -117,8 +117,10 @@ class Blockchain(object):
         :return: True if the resulting hash is a valid proof, False otherwise
         """
         guess = f'{block_string}{proof}'.encode()
+        print(f'********\n/mine\nINSIDE valid_proof(): encoded guess {guess}\n********')
+
         guess_hash = hashlib.sha256(guess).hexdigest()
-        print(f'guess_hash: {guess_hash}')
+        print(f'********\n/mine\nINSIDE valid_proof(): guess hash {guess_hash}\n********')
 
         return guess_hash[:4] == '0000'
 
@@ -135,28 +137,40 @@ blockchain = Blockchain()
 
 @app.route('/mine', methods=['POST'])
 def mine():
-    values = request.get_json()
-
-
-    required = ['proof', 'id']
-    if not all (k in values for k in required):
-        response = {'messages': 'Missing Values'}
+    # Check for non JSON values
+    try:
+        values = request.get_json()
+    except ValueError:
+        response = {'Error': 'Error:  Non-json response'}
         return jsonify(response), 400
 
+    # Check for appropriate values have been passed to /mine
+    required = ['proof', 'id']
+    if not all (k in values for k in required):
+        response = {'Error': 'Missing Values'}
+        return jsonify(response), 400
     submitted_proof = values['proof']
 
-    block_string = json.dumps(blockchain.last_block, sort_keys=True)
-    if blockchain.valid_proof(block_string, submitted_proof):
-        
-        block_string = json.dumps(blockchain.last_block ,sort_keys=True)
+    # get last block
+    last_block = blockchain.last_block
+    print(f'********\n/mine endpoint:\nLast Block {last_block}\n{type(last_block)}\n********')
 
-        # Forge the new Block by adding it to the chain with the proof
+    # Turn into block_string
+    block_string = json.dumps(last_block, sort_keys=True)
+    print(f'********\n/mine endpoint:\nBlock String {block_string}\n{type(block_string)}\n********')
+
+    breakpoint()
+
+    if blockchain.valid_proof(block_string, submitted_proof):
+        # Get previous hash
         previous_hash = blockchain.hash(blockchain.last_block)
-        block = blockchain.new_block(submitted_proof, previous_hash)
+        # Forge new block
+        forged_block = blockchain.new_block(submitted_proof, previous_hash)
+        print(f'********\n/mine endpoint:\nProof is VALID: Forged Block {forged_block}\n********')
 
         response = {
             # TODO: Send a JSON response with the new block
-            'new_block': block
+            'new_block': forged_block
         }
 
         return jsonify(response), 200
