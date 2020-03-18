@@ -67,9 +67,9 @@ class Blockchain(object):
         
 
         # TODO: Create the block_string
-        string_block = json.dumps(block,sort_keys=True)
+        string_block = json.dumps(block,sort_keys=True).encode()
         # TODO: Hash this string using sha256
-        raw_hash = hashlib.sha256(string_block.encode())        # RETURNS AN OBJECT
+        raw_hash = hashlib.sha256(string_block)        # RETURNS AN OBJECT
 
         # By itself, the sha256 function returns the hash in a raw string
         # that will likely include escaped characters.
@@ -85,26 +85,27 @@ class Blockchain(object):
     def last_block(self):
         return self.chain[-1]
 
-    def proof_of_work(self, block):
-        """
-        Simple Proof of Work Algorithm
-        Stringify the block and look for a proof.
-        Loop through possibilities, checking each one against `valid_proof`
-        in an effort to find a number that is a valid proof
-        :return: A valid proof for the provided block
-        """
-        # TODO
-        block_string = json.dumps(block ,sort_keys=True)
-        
-        proof = random.randint(0, 10000)
-        while self.valid_proof(block_string, proof) is False:
-            proof += 1
-            print(f'proof: {proof}')
+    # def proof_of_work(self, block):           # OFFLOAD THE WORK!!
+    #     """
+    #     Simple Proof of Work Algorithm
+    #     Stringify the block and look for a proof.
+    #     Loop through possibilities, checking each one against `valid_proof`
+    #     in an effort to find a number that is a valid proof
+    #     :return: A valid proof for the provided block
+    #     """
 
-        return proof
+    #     # TODO
+    #     block_string = json.dumps(block ,sort_keys=True)
+        
+    #     proof = random.randint(0, 10000)
+    #     while self.valid_proof(block_string, proof) is False:
+    #         proof += 1
+    #         print(f'proof: {proof}')
+
+    #     return proof
 
     @staticmethod
-    def valid_proof(block_string, proof):
+    def valid_proof(block_string, proof):       # DONT OFFLOAD THIS!! YOU NEED THE VARIFICATIO ON BOTH SIDES
         """
         Validates the Proof:  Does hash(block_string, proof) contain 3
         leading zeroes?  Return true if the proof is valid
@@ -132,20 +133,38 @@ node_identifier = str(uuid4()).replace('-', '')
 blockchain = Blockchain()
 
 
-@app.route('/mine', methods=['GET'])
+@app.route('/mine', methods=['POST'])
 def mine():
-    # Run the proof of work algorithm to get the next proof
-    proof = blockchain.proof_of_work(blockchain.last_block)
-    # Forge the new Block by adding it to the chain with the proof
-    previous_hash = blockchain.hash(blockchain.last_block)
-    block = blockchain.new_block(proof, previous_hash)
+    values = request.get_json()
 
-    response = {
-        # TODO: Send a JSON response with the new block
-        'new_block': block
-    }
 
-    return jsonify(response), 200
+    required = ['proof', 'id']
+    if not all (k in values for k in required):
+        response = {'messages': 'Missing Values'}
+        return jsonify(response), 400
+
+    submitted_proof = values['proof']
+
+    block_string = json.dumps(blockchain.last_block, sort_keys=True)
+    if blockchain.valid_proof(block_string, submitted_proof):
+        
+        block_string = json.dumps(blockchain.last_block ,sort_keys=True)
+
+        # Forge the new Block by adding it to the chain with the proof
+        previous_hash = blockchain.hash(blockchain.last_block)
+        block = blockchain.new_block(submitted_proof, previous_hash)
+
+        response = {
+            # TODO: Send a JSON response with the new block
+            'new_block': block
+        }
+
+        return jsonify(response), 200
+    else:
+        response = {
+            'message': 'Proof Either Invalid or Late'
+        }
+        return jsonify(response), 400
 
 
 @app.route('/chain', methods=['GET'])
