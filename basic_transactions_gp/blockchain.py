@@ -149,6 +149,42 @@ def return_last_block():
 
     return jsonify(response), 200
 
+@app.route('/transactions/new', methods=['POST'])
+def post_new_transaction():
+    ''' JSON
+    {
+        "sender": "YOU",
+        "recipient": "ME",
+        "amount": 200
+    }
+    '''
+    try:
+        data = request.get_json()
+    except ValueError:
+        print('Error: Non-json response')
+        print('Response returned:')
+        print(request)
+        return
+
+    required = ['sender', 'recipient', 'amount']
+    if 'sender' not in data or 'recipient' not in data or 'amount' not in data: 
+
+        response = {'message': "missing Values"}
+        return jsonify(response), 400
+
+    # put new transaction into the SIDE current transactions until the next block is mined
+    index = blockchain.new_transaction( data['sender'],
+                                data['recipient'],
+                                data['amount'])
+
+    response = {
+        'message': f'Your transaction has been saved and will be added to the next mined block at index: {index}',
+        'block_index': index,
+        'block': blockchain.last_block,
+    }
+
+    return jsonify(response), 200
+
 @app.route('/mine', methods=['POST'])
 def mine():
     # Check for non JSON values
